@@ -1,1 +1,1 @@
-Nécessite la librairie 433Utils installée dans le répertoire /root
+Nécessite le dossier RPi_utils installée dans le répertoire /root
