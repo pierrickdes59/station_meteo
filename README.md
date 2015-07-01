@@ -1,1 +1,1 @@
-# station_meteo
+Nécessite la librairie 433Utils installée dans le répertoire /root
