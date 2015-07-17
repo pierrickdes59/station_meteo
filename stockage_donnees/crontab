@@ -1,0 +1,5 @@
+*/15 * * * * php -f /root/meteo/temperature/script.php
+*/10 * * * * php -f /root/meteo/luminosite/script.php
+*/2 * * * * php -f /root/meteo/pluie/script.php
+*/30 * * * * php -f /root/meteo/pression/script.php
+

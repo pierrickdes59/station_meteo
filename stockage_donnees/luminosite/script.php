@@ -2,7 +2,7 @@
 <?php
 try
 {
-	$bdd = new PDO('mysql:host=localhost;dbname=meteo;charset=utf8', 'root', 'mdp');
+	$bdd = new PDO('mysql:host=localhost;dbname=meteo;charset=utf8', 'root', 'JudoFoot31031999');
 }
 catch(Exception $e)
 {

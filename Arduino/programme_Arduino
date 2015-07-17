@@ -1,0 +1,102 @@
+  #include <RCSwitch.h> //Librairie pour envoyer par radio
+  #include <OneWire.h> //Librairie pour lire le capteur DS18B20
+  #include <Wire.h> //Libraire pour l'I2C
+  #include <Adafruit_BMP085.h> //Librarie pour le capteur de pression BMP085
+  
+  Adafruit_BMP085 bmp; //Création d'un objet pour le capteur de pression
+  RCSwitch mySwitch = RCSwitch(); //Création d'un objet RCSwitch
+
+  const int broche = 2; //Broche sur laquelle est connecté le DATA du capteur DS18B20
+  const int mesure = 0x44; //Commande pour lancer la mesure sur le capteur DS18B20
+  const int lecture = 0xBE; //Commande pour lancer la lecture sur le capteur DS18B20
+  int tempet=0; // Variable pour resultat brute  de la mesure
+  float tempetf=0.0; // Variable pour resultat à virgule de la mesure
+
+  OneWire capteur(broche); // Définition d'un objet OneWire
+  byte adresse[8];  // Tableau pour stocker l'adresse du capteur DS18B20
+  byte donnees[12]; // Tableau pour stocker les données reçues du capteur DS18B20
+
+  int port = A0;    //port photo-résistance
+  int valeur = 0;   //valeur brute lumi
+  float luminosite = 0;     //valeur en Volt lumi
+
+  const int capteur_pluie = 4; //capteur pluie sur pin digit 4
+  float pluie = 0.0; //si il pleut ou non
+
+  float pression = 0.0; //variable pour stocker la pression
+  
+ 
+  
+
+void setup() {
+  Serial.begin(9600); //Initialisation de la vitesse à 9600 bauds
+  mySwitch.enableTransmit(10); // Broche sur laquelle est connecté le DATA de l'émetteur radio
+  capteur.search(adresse); // Cherche l'adresse du capteur DS18B20
+  capteur.reset(); // Réinitialise la connexion avec le capteur DS18B20
+  bmp.begin(); //Initialisation et calibrage du capteur de pression
+}
+ 
+void loop() {
+  
+ 
+  capteur.reset(); // Réinitialise la connexion avec le capteur DS18B20
+  capteur.select(adresse); // Sélectionne le capteur DS18B20
+  capteur.write(mesure,1); // Demande au capteur DS18B20 de lancer une mesure et maintient l'alimentation
+  delay(1000); // Pause de 1 seconde 
+  capteur.reset(); //Réinitialise la connexion avec le capteur DS18B20
+  capteur.select(adresse); // Sélectionne le capteur DS18B20
+  capteur.write(lecture,1); // Lance la mesure sur le capteur DS18B20 et maintient l'alimentation
+
+for (int i = 0; i < 9; i++)
+{
+  donnees[i] = capteur.read(); // Remplit le tableau 'donnees' avec les informations du capteur
+}
+  donnees[1]=donnees[1] & B10000111; // Met à 0 les bits de signes inutiles
+  tempet=donnees[1]; // Bits de poids fort
+  tempet=tempet<<8; 
+  tempet=tempet+donnees[0]; // Bits de poids faible
+
+  // --- En mode 12 bits, la résolution est de 0.0625°C - cf datasheet DS18B20
+  tempetf=float(tempet)*6.25; // Convertit en degrès Celsius
+  tempetf=9990000+tempetf; //Ajoute le verrou 999
+  
+  valeur = analogRead(port); //Lit la valeur envoyée par la photo-résistance sur le port analogique
+  luminosite = (valeur * 5.0) / 1024.0;  //Conversion en volts
+  luminosite = luminosite * 1000; //Multiplie pour avoir des décimales
+  luminosite = 8880000 + luminosite; //Ajoute le verrou 888
+  
+  if(digitalRead(capteur_pluie) == LOW)
+  {
+     pluie = 7770001; //ajoute le verrou 777 et retourne 1 s'il pleut
+  }
+  else
+  {
+   pluie = 7770000; //ajoute le verrou 777 et retourne 0 s'il ne pleut pas
+  }
+  
+  pression = bmp.readPressure() / 100; //divise la pression pour ajouter le verrou
+  pression = 6660000 + pression; //ajout du verrou 666
+  
+
+  mySwitch.send(tempetf, 24); // Envoie la température
+  delay(1000);  // Pause de 1 seconde
+  mySwitch.send(luminosite, 24); // Envoie la luminosite
+  delay(1000);
+  mySwitch.send(pluie, 24); //Evoie s'il pleut ou non
+  delay(1000);
+  mySwitch.send(pression, 24); //Envoie la pression
+  delay(1000);
+  
+   
+  Serial.print("Luminosité : ");
+  Serial.println(luminosite); //affiche la luminosité dans le moniteur série
+  Serial.print("Température : ");
+  Serial.println(tempetf); // Affiche la température envoyée dans le moniteur série
+  Serial.print("Pluie : ");
+  Serial.println(pluie); //affiche la pluie dans le moniteur série
+  Serial.print("Pression : ");
+  Serial.println(pression); //Affiche la pression dans le moniteur série
+ 
+  delay(2000); // Pause de 2 secondes
+ 
+}
